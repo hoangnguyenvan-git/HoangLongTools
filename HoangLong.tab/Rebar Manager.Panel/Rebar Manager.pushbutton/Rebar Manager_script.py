@@ -17,6 +17,7 @@ from pyrevit import forms
 # Autodesk.Revit Libraries
 from Autodesk.Revit.DB import *
 from Autodesk.Revit.UI.Selection import ObjectType
+from Autodesk.Revit.UI import UIApplication
 
 # Nguyen Hoang Libraries
 from NguyenHoangLib._rebarutils_ import *
@@ -288,7 +289,7 @@ class RebarWindow(forms.WPFWindow):
             # Calculate Before Export Bending  Detail
             calculate_rebar_runner(doc, self, 5)
             self.refresh_list()
-            rebar_detail_runner(doc, self)
+            rebar_detail_runner(doc, self, uiapp)
             self.refresh_list()
             schedule_progress_reset(self)
         except Exception as e:

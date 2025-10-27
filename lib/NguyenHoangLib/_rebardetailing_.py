@@ -21,7 +21,7 @@ from NguyenHoang.RBM.RebarDetailing import RebarDetailing as RD # type: ignore
 
 # ----------------------- GLOBAL FUNCTION -----------------------
 # Rebar Detail Runner
-def rebar_detail_runner(doc, window):
+def rebar_detail_runner(doc, window, uiapp):
 
     checked_rebar_data = create_value_tuple_data(window)
 
@@ -30,6 +30,7 @@ def rebar_detail_runner(doc, window):
     
     try:
         RD.RebarDetailingRunner.RunAll(
+            uiapp,
             doc,
             checked_rebar_data,
             window.RebarListView.ItemsSource,
