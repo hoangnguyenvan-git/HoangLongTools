@@ -18,9 +18,6 @@ from pyrevit import forms
 from Autodesk.Revit.DB import *
 from Autodesk.Revit.UI.Selection import ObjectType
 
-# Python Libraries
-import traceback
-
 # Nguyen Hoang Libraries
 from NguyenHoangLib._rebarutils_ import *
 from NguyenHoangLib._rebardetailing_ import *
@@ -296,7 +293,6 @@ class RebarWindow(forms.WPFWindow):
             schedule_progress_reset(self)
         except Exception as e:
             print(" Crash in run():", str(e))
-            traceback.print_exc()
     
     # -------------------------------
     # Detail Setting Button Click
@@ -490,6 +486,5 @@ def run_check():
         rebar_window_open()
     except Exception as e:
         print(str(e))
-        traceback.print_exc()
 
 run_check()
