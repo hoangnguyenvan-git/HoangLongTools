@@ -15,10 +15,9 @@ import os
 import sys
 import clr
 import traceback
-
-import System # type: ignore
-from System import AppDomain # type: ignore
-from System.Reflection import Assembly # type: ignore
+from System import AppDomain #type: ignore
+from System.Reflection import Assembly, AssemblyName #type: ignore
+from System.IO import FileInfo #type: ignore
 
 ext_dir = os.path.dirname(__file__)
 core_dir = os.path.join(ext_dir, 'lib', 'NguyenHoangCore')
