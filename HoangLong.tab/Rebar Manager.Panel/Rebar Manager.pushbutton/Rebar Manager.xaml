@@ -583,7 +583,7 @@
 
                     <TextBlock Grid.Column="2"
                                Style="{StaticResource TitleStyle}"
-                               Text="V-1.0.0" HorizontalAlignment="Left" FontSize="15" VerticalAlignment="Center" Margin="-20,0,0,-10">
+                               Text="V-1.1.0" HorizontalAlignment="Left" FontSize="15" VerticalAlignment="Center" Margin="-20,0,0,-10">
 
                     </TextBlock>
 

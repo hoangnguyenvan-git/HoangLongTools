@@ -125,10 +125,14 @@ def process_rebar(action, window, alert_message, success_color =None, warning_co
                     update_process_bar(window, progress, action, "Rebar Number {}".format(idx + 1))
 
             elif action == "ShowOnly":
-                view.HideElements(hide_element_ids)
-                update_process_bar(window, 50, action, "Hiding")
-                view.UnhideElements(show_element_ids)
-                update_process_bar(window, 100, action, "Success")
+                if show_element_ids.Count == all_rebar_ids.Count:
+                    view.UnhideElements(show_element_ids)
+                    update_process_bar(window, 100, action, "Success")
+                else:
+                    view.HideElements(hide_element_ids)
+                    update_process_bar(window, 50, action, "Hiding")
+                    view.UnhideElements(show_element_ids)
+                    update_process_bar(window, 100, action, "Success")
             t.Commit()
 
             schedule_progress_reset(window)
