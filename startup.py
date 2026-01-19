@@ -25,6 +25,16 @@ core_dir = os.path.join(ext_dir, 'lib', 'NguyenHoangCore')
 if core_dir not in sys.path:
     sys.path.append(core_dir)
 
+def is_assembly_loaded(assembly_name):
+    """Check if assembly is already loaded in the current AppDomain"""
+    try:
+        for asm in AppDomain.CurrentDomain.GetAssemblies():
+            if asm.GetName().Name == assembly_name:
+                return True
+    except:
+        pass
+    return False
+
 # Resolve dependencies from core_dir
 def _resolve(sender, args):
     try:
@@ -52,11 +62,17 @@ try:
             if not os.path.exists(dll_path):
                 continue
             
-            # Pre-validate the assembly (this was in your debug version)
+            # Pre-validate the assembly
             fi = FileInfo(dll_path)
             try:
                 an = AssemblyName.GetAssemblyName(dll_path)
+                asm_name = an.Name
             except Exception:
+                continue
+            
+            # ⭐ KEY FIX: Skip if assembly is already loaded
+            if is_assembly_loaded(asm_name):
+                # Assembly already loaded from another tool - skip loading
                 continue
             
             # Now load it

@@ -59,7 +59,10 @@ no_rebar_alert = "Không có cốt thép được chọn (┬┬﹏┬┬)"
 # ----------------------- GLOBAL FUNCTION -----------------------
 # Message Warning
 def alert(owner, message, title="Alert"):
-    return MessageBoxWindow.Show(owner, message, title, False)
+    try:
+        MessageBoxWindow.Show(owner, message, title, False)
+    except Exception as e:
+        print(str(e))
 
 # UI Update Message Column
 def update_ui_message(window, partition, schedule_mark, message, color):
@@ -124,19 +127,34 @@ def update_process_bar(window, value, partition=None, schedule_mark=None, random
 # Force UI Update
 def force_ui_update(control):
     def _noop(): pass
-    control.Dispatcher.Invoke(Action(_noop), DispatcherPriority.Background)
+    try:
+        # BeginInvoke is non-blocking - won't cause freeze during drag
+        control.Dispatcher.BeginInvoke(Action(_noop), DispatcherPriority.Background)
+    except:
+        pass
 
 # Delay Reset 0 Value
 def schedule_progress_reset(window, delay_ms=1500):
+    """Reset progress bar after delay"""
+    # Cancel existing timer
+    if hasattr(window, 'progress_reset_timer') and window.progress_reset_timer:
+        if window.progress_reset_timer.IsEnabled:
+            window.progress_reset_timer.Stop()
+    
     timer = DispatcherTimer()
     timer.Interval = System.TimeSpan.FromMilliseconds(delay_ms)
 
     def reset(sender, args):
         timer.Stop()
-        update_process_bar(window, 0)
-        force_ui_update(window.ProgressBar)
+        
+        try:
+            update_process_bar(window, 0)
+            force_ui_update(window.ProgressBar)
+        except Exception as e:
+            pass
 
     timer.Tick += reset
+    window.progress_reset_timer = timer
     timer.Start()
 
 # Load Logo 

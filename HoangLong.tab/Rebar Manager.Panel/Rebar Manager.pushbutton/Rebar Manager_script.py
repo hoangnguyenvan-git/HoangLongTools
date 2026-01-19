@@ -12,12 +12,10 @@
 
 # ----------------------- IMPORT LIBRARY ------------------------
 # pyRevit Libraries
-from pyrevit import forms
+from pyrevit import forms, HOST_APP
 
 # Autodesk.Revit Libraries
-from Autodesk.Revit.DB import *
 from Autodesk.Revit.UI.Selection import ObjectType
-from Autodesk.Revit.UI import UIApplication
 
 # Nguyen Hoang Libraries
 from NguyenHoangLib._rebarutils_ import *
@@ -37,6 +35,8 @@ from NguyenHoang.RBM.RebarUltils import RebarUtils as RBU # type: ignore
 from System.Windows.Data import CollectionViewSource, PropertyGroupDescription # type: ignore
 from System.Windows import WindowState # type: ignore
 from System.Windows.Input import MouseButtonState # type: ignore
+from System.Windows.Interop import WindowInteropHelper # type: ignore
+from System import TimeSpan # type: ignore
 
 # ----------------------- MAIN CODE -----------------------
 # RebarWindow WPF
@@ -46,6 +46,18 @@ class RebarWindow(forms.WPFWindow):
         self.collection_view_source = None
         self.RebarListView.ItemsSource = []
         self.Resources["MyNasalFont"] = nasal_font
+
+        self.search_timer = DispatcherTimer()
+        self.search_timer.Interval = TimeSpan.FromMilliseconds(300)
+        self.search_timer.Tick += self.OnSearchTimerTick
+        self.pending_search_text = ""
+        self.search_cache = {}
+
+        try:
+            helper = WindowInteropHelper(self)
+            helper.Owner = HOST_APP.proc_window
+        except Exception as e:
+            print("Window owner setup: {}".format(str(e)))
 
     # -------------------------------
     # Populate Data
@@ -75,8 +87,11 @@ class RebarWindow(forms.WPFWindow):
         self.WindowState = WindowState.Minimized
 
     def Window_MouseLeftButtonDown(self, sender, args):
-        if args.ButtonState == MouseButtonState.Pressed:
-            self.DragMove()
+        if args.LeftButton == MouseButtonState.Pressed:
+            try:
+                self.DragMove()
+            except:
+                pass
 
     # -------------------------------
     # Shape Option Combobox
@@ -110,57 +125,85 @@ class RebarWindow(forms.WPFWindow):
     def OnSearchTextChanged(self, sender, args):
         try:
             search_text = sender.Text.lower().strip()
-            current_length = len(search_text)
             
-            # Initialize tracking variables
-            if not hasattr(self, 'last_length'):
-                self.last_length = 0
+            if hasattr(self, 'last_search_text') and search_text == self.last_search_text:
+                return
+            
+            self.pending_search_text = search_text
+            
+            if self.search_timer.IsEnabled:
+                self.search_timer.Stop()
+            
+            self.search_timer.Start()
+            
+        except Exception as e:
+            print("Search text changed error: {0}".format(e))
+
+    def OnSearchTimerTick(self, sender, args):
+        self.search_timer.Stop()
+        
+        try:
+            search_text = self.pending_search_text
+            
             if not hasattr(self, 'last_search_text'):
                 self.last_search_text = ""
-                
-            # Skip if same search
+            
             if search_text == self.last_search_text:
                 return
             
-            # Detect backspacing
-            is_backspacing = current_length < self.last_length
-            self.last_length = current_length
             self.last_search_text = search_text
             
             if search_text in ["", "search here please..."]:
                 self.collection_view_source.View.Filter = None
-            else:
-                if is_backspacing:
-                    filtered_items = []
-                    all_items = list(self.collection_view_source.Source)
+                if hasattr(self, 'search_cache'):
+                    self.search_cache.clear()
+                self.collection_view_source.View.Refresh()
+                return
+            
+            if hasattr(self, 'search_cache') and search_text in self.search_cache:
+                filtered_set = self.search_cache[search_text]
+                self.collection_view_source.View.Filter = lambda item: item in filtered_set
+                self.collection_view_source.View.Refresh()
+                return
+            
+            all_items = list(self.collection_view_source.Source)
+            filtered_items = []
+            
+            for item in all_items:
+                try:
+                    schedule_lower = (item.ScheduleMark or "").lower()
+                    partition_lower = (item.Partition or "").lower()
+                    diameter_str = str(item.Diameter or "").lower()
                     
-                    for item in all_items:
-                        if (search_text in (item.ScheduleMark or "").lower() or
-                            search_text in (item.Partition or "").lower() or
-                            search_text in str(item.Diameter or "").lower()):
-                            filtered_items.append(item)
-                            
-                            if len(filtered_items) >= 50:
-                                break
-                    
-                    filtered_set = set(filtered_items)
-                    def limited_filter(item):
-                        return item in filtered_set
-                    
-                    self.collection_view_source.View.Filter = limited_filter
-                else:
-                    def filter_function(item):
-                        return (search_text in (item.ScheduleMark or "").lower() or
-                                search_text in (item.Partition or "").lower() or
-                                search_text in str(item.Diameter or "").lower())
-                    
-                    self.collection_view_source.View.Filter = filter_function
-
+                    if (search_text in schedule_lower or
+                        search_text in partition_lower or
+                        search_text in diameter_str):
+                        filtered_items.append(item)
+                        
+                        if len(filtered_items) >= 500:
+                            break
+                except:
+                    pass
+            
+            filtered_set = set(filtered_items)
+            
+            if not hasattr(self, 'search_cache'):
+                self.search_cache = {}
+            
+            self.search_cache[search_text] = filtered_set
+            
+            if len(self.search_cache) > 50:
+                oldest_keys = list(self.search_cache.keys())[:25]
+                for key in oldest_keys:
+                    del self.search_cache[key]
+            
+            self.collection_view_source.View.Filter = lambda item: item in filtered_set
+            
             self.collection_view_source.View.Refresh()
-
+            
         except Exception as e:
-            alert(self, "Error in OnSearchTextChanged: {0}".format(e), "WARNING")
- 
+            print("Search filter error: {0}".format(e))
+
     def SearchTextBox_GotFocus(self, sender, args):
         if sender.Text == "Search here please...":
             sender.Text = ""
@@ -277,7 +320,7 @@ class RebarWindow(forms.WPFWindow):
     # -------------------------------
     # Calculate Button
     def Calculate_Button_Click(self, sender, args, reset = True):
-        calculate_rebar_runner(doc, self, 0)
+        calculate_rebar_runner(doc, self, 5)
         self.refresh_list()
         if reset:
             schedule_progress_reset(self)
@@ -313,6 +356,16 @@ class RebarWindow(forms.WPFWindow):
         except Exception as e:
             print(str(e))
 
+    # -------------------------------
+    # Detail Setting Button Click
+    def Export_Rebar_Segment_Value(self,sender, args):
+        try:
+            export_rebar_segment_length_value(self, doc, DarkGreen, Red, uiapp)
+            self.refresh_list()
+            schedule_progress_reset(self)
+        except Exception as e:
+            print(str(e))
+            
     # -------------------------------
     # Delete Bending Detail Button Click
     def Delete_Rebar_Detail_Button_Click(self, sender, args):

@@ -17,4 +17,3 @@ from NguyenHoang.RBM.Msb import MessageBoxWindow # type: ignore
 
 # ----------------------- MAIN CODE -----------------------
 MessageBoxWindow.Show(None, "Upcoming tool...", "WARNING", False)
-

@@ -12,7 +12,7 @@
 
 # ----------------------- IMPORT LIBRARY ------------------------
 # Autodesk.Revit Libraries
-from Autodesk.Revit.DB import *
+from Autodesk.Revit.DB import ViewType, ElementId, FormatOptions, SpecTypeId, Transaction, UnitTypeId
 
 # Python Libraries
 import random

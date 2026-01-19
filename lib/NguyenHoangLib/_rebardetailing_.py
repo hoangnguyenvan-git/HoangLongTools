@@ -127,3 +127,26 @@ def scale_rebar_detail_by_factor(window, doc, scale_factor, success_color, fail_
         )
     except Exception as e:
         alert(None, str(e), "WARNING")
+
+
+# Export Rebar Segment Value
+def export_rebar_segment_length_value(window, doc, success_color, fail_color, uiapp):
+
+    checked_rebar_data = create_value_tuple_data(window)
+
+    if not checked_rebar_data:
+        alert(None, no_rebar_alert, "WARNING")
+        return
+
+    try:
+        RD.RebarDetailingRunner.ExportBarSegmentTables(
+            uiapp,
+            doc, 
+            checked_rebar_data, 
+            window.RebarListView.ItemsSource,
+            success_color, 
+            fail_color,
+            lambda pct, part, mark: update_process_bar(window, pct, part, mark, random=False)
+        )
+    except Exception as e:
+        alert(None, str(e), "WARNING")
